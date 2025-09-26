@@ -6,10 +6,11 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 func main() {
-	p := tea.NewProgram(initModel())
+	p := tea.NewProgram(initModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
@@ -115,12 +116,23 @@ func (m model) createTodo() model {
 }
 
 func (m model) View() string {
-	s := "--- TODO ---\n\n"
+	var styleTitle = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#d787ff")).
+		Margin(1, 4, 1, 4).
+		Padding(0, 1, 0, 1).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#d787ff"))
+	var styleHint = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#808080"))
+
+	s := styleTitle.Render("TODO")
 
 	if m.isInput {
+		s += "\n"
 		s += m.input.View()
-		s += "\n\n[Press Enter to add, Esc to cancel]"
+		s += styleHint.Render("\n\n[Press Enter to add, Esc to cancel]")
 	} else {
+		s += "\n"
 		for i, choice := range m.list {
 
 			// Is the cursor pointing at this choice?
@@ -133,7 +145,7 @@ func (m model) View() string {
 			s += fmt.Sprintf("%s %s\n", cursor, choice)
 		}
 
-		s += "\n[n to add a todo - q to quit.]\n"
+		s += styleHint.Render("\n[n to add a todo - q to quit.]\n")
 	}
 	// Send the UI for rendering
 	return s
