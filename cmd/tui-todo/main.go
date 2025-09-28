@@ -18,10 +18,11 @@ func main() {
 }
 
 type model struct {
-	list    []string
-	cursor  int
-	input   textinput.Model
-	isInput bool
+	list      []string
+	completed []bool
+	cursor    int
+	input     textinput.Model
+	isInput   bool
 }
 
 func initModel() model {
@@ -32,10 +33,11 @@ func initModel() model {
 	ti.Width = 20
 
 	return model{
-		list:    []string{"hello world", "salut ça va"},
-		cursor:  0,
-		input:   ti,
-		isInput: false,
+		list:      []string{"hello world", "salut ça va"},
+		completed: []bool{false, false},
+		cursor:    0,
+		input:     ti,
+		isInput:   false,
 	}
 }
 
@@ -87,6 +89,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.input.Focus()
 					return m, cmd
 				}
+
+			case tea.KeySpace.String():
+				m.completed[m.cursor] = !m.completed[m.cursor]
 			}
 		}
 
@@ -108,6 +113,7 @@ func (m model) createTodo() model {
 	todoText := m.input.Value()
 	if todoText != "" {
 		m.list = append(m.list, todoText)
+		m.completed = append(m.completed, false)
 	}
 	m.input.SetValue("")
 	m.isInput = false
@@ -124,25 +130,31 @@ func (m model) View() string {
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#d787ff"))
 	var styleHint = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#808080"))
+	var styleCompleted = lipgloss.NewStyle().Italic(true).Strikethrough(true).Foreground(lipgloss.Color("#808080"))
 
 	s := styleTitle.Render("TODO")
 
+	// Creating a new Todo Mode
 	if m.isInput {
 		s += "\n"
 		s += m.input.View()
 		s += styleHint.Render("\n\n[Press Enter to add, Esc to cancel]")
-	} else {
+	} else { // Browsing todos (main view)
 		s += "\n"
 		for i, choice := range m.list {
 
-			// Is the cursor pointing at this choice?
 			cursor := " " // no cursor
 			if m.cursor == i {
 				cursor = ">" // cursor!
 			}
 
-			// Render the row
-			s += fmt.Sprintf("%s %s\n", cursor, choice)
+			if m.completed[i] {
+				s += styleCompleted.Render(fmt.Sprintf("%s [x] %s", cursor, choice))
+			} else {
+				s += fmt.Sprintf("%s [ ] %s", cursor, choice)
+			}
+
+			s += "\n"
 		}
 
 		s += styleHint.Render("\n[n to add a todo - q to quit.]\n")
